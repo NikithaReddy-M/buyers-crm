@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite" // you can switch to "postgresql" or "mysql" later
+  url      = env("DATABASE_URL")
+}
+
+//
+// ENUMS
+//
+enum City {
+  Chandigarh
+  Mohali
+  Zirakpur
+  Panchkula
+  Other
+}
+
+enum PropertyType {
+  Apartment
+  Villa
+  Plot
+  Office
+  Retail
+}
+
+enum BHK {
+  ONE    @map("1")
+  TWO    @map("2")
+  THREE  @map("3")
+  FOUR   @map("4")
+  STUDIO @map("Studio")
+}
+
+enum Purpose {
+  Buy
+  Rent
+}
+
+enum Timeline {
+  ZERO_TO_3M  @map("0-3m")
+  THREE_TO_6M @map("3-6m")
+  ABOVE_6M    @map(">6m")
+  EXPLORING   @map("Exploring")
+}
+
+enum Source {
+  Website
+  Referral
+  Walk_in  @map("Walk-in")
+  Call
+  Other
+}
+
+enum Status {
+  New
+  Qualified
+  Contacted
+  Visited
+  Negotiation
+  Converted
+  Dropped
+}
+
+//
+// MODELS
+//
+model User {
+  id        String         @id @default(uuid())
+  email     String?        @unique
+  name      String?
+  buyers    Buyer[]        @relation("OwnerBuyers")
+  histories BuyerHistory[]
+  createdAt DateTime       @default(now())
+}
+
+model Buyer {
+  id           String         @id @default(uuid())
+  fullName     String
+  email        String?
+  phone        String
+  city         City
+  propertyType PropertyType
+  bhk          BHK?
+  purpose      Purpose
+  budgetMin    Int?
+  budgetMax    Int?
+  timeline     Timeline
+  source       Source
+  status       Status         @default(New)
+  notes        String? // ≤ 1000 chars (enforced in validation, not DB)
+  tags         Json? // array of strings
+  ownerId      String
+  owner        User           @relation(fields: [ownerId], references: [id], name: "OwnerBuyers")
+  histories    BuyerHistory[] // back relation
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+model BuyerHistory {
+  id        String   @id @default(uuid())
+  buyerId   String
+  buyer     Buyer    @relation(fields: [buyerId], references: [id])
+  changedBy String?
+  user      User?    @relation(fields: [changedBy], references: [id])
+  changedAt DateTime @default(now())
+  diff      Json
+}
